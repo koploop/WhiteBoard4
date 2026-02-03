@@ -67,6 +67,14 @@ class MainActivity : AppCompatActivity() {
         toolbarView.setOnDrawClickListener {
             sdk.setInteractionMode(InteractionMode.DRAW)
         }
+        toolbarView.setOnZoomClickListener {
+            val currentState = sdk.uiState.value
+            val nextZoomMode = !currentState.isZoomMode
+            sdk.setZoomMode(nextZoomMode)
+            sdk.setMultiFingerEnabled(!nextZoomMode)
+            Toast.makeText(this, if (nextZoomMode) "Zoom/Pan Enabled" else "Multi-Finger Writing Enabled", Toast.LENGTH_SHORT).show()
+        }
+
         toolbarView.setOnSelectClickListener {
             sdk.setInteractionMode(InteractionMode.SELECT)
         }
@@ -108,9 +116,6 @@ class MainActivity : AppCompatActivity() {
         settingsPanel.setOnBgSolidClickListener {
             sdk.setBackgroundType(BackgroundType.SOLID)
             sdk.setBackgroundColor(0xFFFFFFFF.toInt())
-        }
-        settingsPanel.setOnMultiFingerChangeListener { _, isChecked ->
-            sdk.setMultiFingerEnabled(isChecked)
         }
         settingsPanel.setOnCopyClickListener {
             sdk.copySelectedElements()

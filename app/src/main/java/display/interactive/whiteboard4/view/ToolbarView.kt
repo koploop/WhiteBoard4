@@ -37,8 +37,8 @@ class ToolbarView @JvmOverloads constructor(
         findViewById<View>(R.id.btnDraw).setOnClickListener(listener)
     }
 
-    fun setOnCircleClickListener(listener: (View) -> Unit) {
-        findViewById<View>(R.id.btnCircle).setOnClickListener(listener)
+    fun setOnZoomClickListener(listener: (View) -> Unit) {
+        findViewById<View>(R.id.btnZoom).setOnClickListener(listener)
     }
 
     fun setOnSettingsClickListener(listener: (View) -> Unit) {

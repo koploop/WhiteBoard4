@@ -28,12 +28,6 @@ class SettingsPanelView @JvmOverloads constructor(
         findViewById<Button>(R.id.btnBgSolid).setOnClickListener(listener)
     }
 
-    fun setOnMultiFingerChangeListener(listener: (View, Boolean) -> Unit) {
-        findViewById<ToggleButton>(R.id.toggleMultiFinger).setOnCheckedChangeListener { view, isChecked ->
-            listener(view, isChecked)
-        }
-    }
-
     fun setOnCopyClickListener(listener: (View) -> Unit) {
         findViewById<Button>(R.id.btnCopy).setOnClickListener(listener)
     }
