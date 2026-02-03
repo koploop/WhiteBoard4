@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml:2:13-83
+INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml:2:13-83
+	package
+		INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml
+	xmlns:android
+		ADDED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml:2:23-81
+uses-sdk
+INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml reason: use-sdk injection requested
+INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml
+INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml
+	android:targetSdkVersion
+		INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml
+	android:minSdkVersion
+		INJECTED from E:\SVN\WhiteBoard4\boardelement\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest14913162088412891152.xml

@@ -1,0 +1,72 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace 'display.interactive.whiteboard4'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "display.interactive.whiteboard4"
+        minSdk 28
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        ist {
+            storeFile file('../jks/system9630.jks')
+            storePassword 'system'
+            keyAlias = 'system'
+            keyPassword 'system'
+        }
+        hik {
+            storeFile file('../jks/Hikvision.jks')
+            storePassword 'hikvision'
+            keyAlias 'hikvision'
+            keyPassword 'hikvision'
+        }
+        v100 {
+            storeFile file('../jks/xbh.jks')
+            storePassword 'android'
+            keyAlias = 'android'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.hik
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.hik
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation project(':boardimpl')
+    implementation project(':boardinterface')
+    implementation project(':boardelement')
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.material
+    implementation libs.androidx.lifecycle.runtime.ktx
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+}

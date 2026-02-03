@@ -1,0 +1,145 @@
+pluginManagement {
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+
+
+/*
+
+pluginManagement {
+    repositories {
+        maven {
+            allowInsecureProtocol true
+            url 'http://af-proxy.hikvision.com.cn:80/artifactory/google'
+        }
+//        maven {
+//            allowInsecureProtocol true
+//            url 'http://af-proxy.hikvision.com.cn:80/artifactory/maven-aliyun-gradle-plugin-remote/'
+//        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af-proxy.hikvision.com.cn:80/artifactory/maven-plugins-gradle-proxy/'
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/trans-release'
+            credentials {
+                username 'trans '
+                password 'trans '
+            }
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/trans-snapshot'
+            credentials {
+                username 'trans '
+                password 'trans '
+            }
+        }
+
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-ifpd-release'
+            credentials {
+                username 'maven-ifpd'
+                password 'maven-ifpd'
+            }
+        }
+
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-ifpd-snapshot'
+            credentials {
+                username 'maven-ifpd'
+                password 'maven-ifpd'
+            }
+        }
+        maven {
+            // maven-dow是最全的，包含了jetpat.io，但是很慢, 一定要放最后
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-down/'
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            allowInsecureProtocol true
+            url 'http://af-proxy.hikvision.com.cn:80/artifactory/google'
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af-proxy.hikvision.com.cn:80/artifactory/maven-jcenter-proxy'
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af-proxy.hikvision.com.cn:80/artifactory/central/'
+        }
+
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-ifpd-snapshot'
+            credentials {
+                username 'maven-ifpd'
+                password 'maven-ifpd'
+            }
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-ifpd-release'
+            credentials {
+                username 'maven-ifpd'
+                password 'maven-ifpd'
+            }
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/trans-release'
+            credentials {
+                username 'trans '
+                password 'trans '
+            }
+        }
+        maven {
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/trans-snapshot'
+            credentials {
+                username 'trans '
+                password 'trans '
+            }
+        }
+        maven {
+            // maven-dow是最全的，包含了jetpat.io，但是很慢, 一定要放最后
+            allowInsecureProtocol true
+            url 'http://af.hikvision.com.cn:80/artifactory/maven-down/'
+        }
+    }
+}
+
+*/
+
+rootProject.name = "WhiteBoard4"
+include ':app'
+include ':accelerate'
+include ':boardinterface'
+include ':boardimpl'
+include ':boardpersist'
+include ':boardelement'
