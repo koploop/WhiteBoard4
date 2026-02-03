@@ -7,6 +7,8 @@ import android.graphics.PointF
  */
 data class WhiteBoardState(
     val elements: List<BaseElement> = emptyList(),
+    val sortedElements: List<BaseElement> = emptyList(), // V0.1.2 Pre-sorted elements for rendering
+    val structuralVersion: Int = 0, // V0.1.2 Incremented on add/delete/split/color change
     val backgroundState: BackgroundState = BackgroundState(),
     val selectedElementIds: Set<String> = emptySet(),
     val interactionMode: InteractionMode = InteractionMode.DRAW,

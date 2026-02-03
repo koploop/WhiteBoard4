@@ -1,7 +1,9 @@
 package display.interactive.whiteboard.interfaces
 
 import android.graphics.Bitmap
+import android.graphics.RectF
 import display.interactive.whiteboard.element.BackgroundType
+import display.interactive.whiteboard.element.BaseElement
 import display.interactive.whiteboard.element.InteractionMode
 import display.interactive.whiteboard.element.StrokeElement
 import display.interactive.whiteboard.element.WhiteBoardState
@@ -15,6 +17,11 @@ interface IWhiteBoardSDK {
      * The current state of the whiteboard.
      */
     val uiState: StateFlow<WhiteBoardState>
+
+    /**
+     * Query elements within a certain range (for frustum culling).
+     */
+    fun queryElements(range: RectF): Set<BaseElement>
 
     /**
      * Set the interaction mode (DRAW, SELECT, NAVIGATE, ERASER).

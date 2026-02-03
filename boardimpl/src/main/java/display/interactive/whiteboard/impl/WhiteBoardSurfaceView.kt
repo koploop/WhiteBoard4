@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Picture
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -50,6 +51,12 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
     private var touchHandler: TouchHandler? = null
     private var selectedHandler: SelectedHandler? = null
     private var accelerateCanvas: AccelerateCanvas? = null
+
+    // V0.1.2 Optimization: Static Layer Caching
+    private var staticPicture: Picture? = null
+    private var staticPictureOffsetLeft: Float = 0f
+    private var staticPictureOffsetTop: Float = 0f
+    private var lastCacheVersion: Int = -1
 
     private var isRunning = false
     private var renderThread: Thread? = null
@@ -114,13 +121,27 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
         canvas.translate(uiState.canvasOffsetX, uiState.canvasOffsetY)
         canvas.scale(uiState.canvasScale, uiState.canvasScale)
 
-        // Draw existing elements
-        uiState.elements.sortedBy { it.zIndex }.forEach { element ->
-            element.isSelected = element.id in uiState.selectedElementIds
-            element.draw(canvas, paint)
+        // V0.1.2 Optimization: Static Layer Caching with Picture
+        if (uiState.structuralVersion != lastCacheVersion) {
+            updateStaticCache()
         }
 
-        // Draw selection box and handles via SelectedHandler (only if in SELECT mode and lasso selection is complete)
+        staticPicture?.let {
+            canvas.save()
+            canvas.translate(staticPictureOffsetLeft, staticPictureOffsetTop)
+            it.draw(canvas)
+            canvas.restore()
+        }
+
+        // Draw selected elements and active paths (Dynamic Layer)
+        uiState.sortedElements.forEach { element ->
+            if (element.id in uiState.selectedElementIds) {
+                element.isSelected = true
+                element.draw(canvas, paint)
+            }
+        }
+
+        // Draw selection box and handles via SelectedHandler
         if (uiState.interactionMode == InteractionMode.SELECT && touchHandler?.isLassoSelected() == true) {
             selectedHandler?.draw(canvas, uiState.elements, uiState.selectedElementIds, uiState.canvasScale)
         }
@@ -155,6 +176,54 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
         }
 
         canvas.restore()
+    }
+
+    private fun updateStaticCache() {
+        val picture = Picture()
+        // Calculate the bounding box of all non-selected elements to determine recording size
+        val bounds = RectF()
+        var first = true
+        uiState.sortedElements.forEach { element ->
+            if (element.id !in uiState.selectedElementIds) {
+                if (first) {
+                    bounds.set(element.getBounds())
+                    first = false
+                } else {
+                    bounds.union(element.getBounds())
+                }
+            }
+        }
+        
+        if (first) {
+            // No static elements
+            this.staticPicture = null
+            this.lastCacheVersion = uiState.structuralVersion
+            return
+        }
+        
+        // Add some padding
+        val width = (bounds.width() + 2000f).toInt().coerceAtLeast(100)
+        val height = (bounds.height() + 2000f).toInt().coerceAtLeast(100)
+        val left = bounds.left - 1000f
+        val top = bounds.top - 1000f
+
+        val recordingCanvas = picture.beginRecording(width, height) 
+        recordingCanvas.save()
+        recordingCanvas.translate(-left, -top)
+        
+        uiState.sortedElements.forEach { element ->
+            if (element.id !in uiState.selectedElementIds) {
+                element.isSelected = false
+                element.draw(recordingCanvas, paint)
+            }
+        }
+        recordingCanvas.restore()
+        picture.endRecording()
+        
+        this.staticPicture = picture
+        this.staticPictureOffsetLeft = left
+        this.staticPictureOffsetTop = top
+        this.lastCacheVersion = uiState.structuralVersion
     }
 
     private fun drawBackground(canvas: Canvas) {

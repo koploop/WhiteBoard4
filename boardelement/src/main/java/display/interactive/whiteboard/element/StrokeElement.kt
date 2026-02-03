@@ -15,7 +15,8 @@ class StrokeElement(
     var color: Int,
     var strokeWidth: Float,
     val type: StrokeType,
-    zIndex: Int
+    zIndex: Int,
+    var isSimplificationEnabled: Boolean = true // V0.1.2 Optional simplification
 ) : BaseElement(id = id, zIndex = zIndex) {
 
     enum class StrokeType {
@@ -37,6 +38,9 @@ class StrokeElement(
     }
 
     fun rebuildPath() {
+        if (isSimplificationEnabled && points.size > 2) {
+            points = simplify(points, 1.0f) // Tolerance can be adjusted
+        }
         path.reset()
         if (points.isNotEmpty()) {
             path.moveTo(points[0].x, points[0].y)
@@ -49,13 +53,49 @@ class StrokeElement(
         bounds.set(tempBounds)
     }
 
+    /**
+     * Ramer-Douglas-Peucker algorithm for path simplification.
+     */
+    private fun simplify(points: List<PointF>, tolerance: Float): List<PointF> {
+        if (points.size <= 2) return points
+
+        var maxDistance = 0f
+        var index = 0
+        val lastIndex = points.size - 1
+
+        for (i in 1 until lastIndex) {
+            val distance = perpendicularDistance(points[i], points[0], points[lastIndex])
+            if (distance > maxDistance) {
+                maxDistance = distance
+                index = i
+            }
+        }
+
+        return if (maxDistance > tolerance) {
+            val leftSide = simplify(points.subList(0, index + 1), tolerance)
+            val rightSide = simplify(points.subList(index, points.size), tolerance)
+            leftSide.dropLast(1) + rightSide
+        } else {
+            listOf(points[0], points[lastIndex])
+        }
+    }
+
+    private fun perpendicularDistance(pt: PointF, lineStart: PointF, lineEnd: PointF): Float {
+        val dx = lineEnd.x - lineStart.x
+        val dy = lineEnd.y - lineStart.y
+        val mag = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+        if (mag == 0f) return Math.sqrt(((pt.x - lineStart.x) * (pt.x - lineStart.x) + (pt.y - lineStart.y) * (pt.y - lineStart.y)).toDouble()).toFloat()
+        
+        return Math.abs(dy * pt.x - dx * pt.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x) / mag
+    }
+
     override fun draw(canvas: Canvas, paint: Paint) {
-        paint.reset()
         paint.color = color
         paint.strokeWidth = strokeWidth
         paint.style = Paint.Style.STROKE
         paint.strokeJoin = Paint.Join.ROUND
         paint.strokeCap = Paint.Cap.ROUND
+        paint.pathEffect = null // Ensure no dash effect from selection
         
         when (type) {
             StrokeType.PEN -> paint.alpha = 255
