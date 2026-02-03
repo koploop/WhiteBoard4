@@ -5,7 +5,6 @@ import android.view.MotionEvent
 import display.interactive.whiteboard.element.BaseElement
 import display.interactive.whiteboard.element.SelectedAbility
 import display.interactive.whiteboard.element.StrokeElement
-import display.interactive.whiteboard.element.TextElement
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
@@ -275,7 +274,7 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
     private fun handleMenuAction(ability: SelectedAbility) {
         when (ability) {
             SelectedAbility.DELETE -> sdk.deleteSelectedElements()
-            SelectedAbility.COPY -> sdk.copySelectedElements()
+            SelectedAbility.COPY -> sdk.duplicateSelectedElements()
             SelectedAbility.CHANGE_ORDER -> {
                 // Toggle between front/back for simplicity, or we could show another menu
                 sdk.bringToFront()

@@ -68,6 +68,29 @@ class StrokeElement(
         restoreTransform(canvas)
     }
 
+    override fun copy(): BaseElement {
+        val newStroke = StrokeElement(
+            id = java.util.UUID.randomUUID().toString(),
+            points = points.map { android.graphics.PointF(it.x, it.y) },
+            color = color,
+            strokeWidth = strokeWidth,
+            type = type,
+            zIndex = zIndex
+        )
+        newStroke.x = x
+        newStroke.y = y
+        newStroke.scaleX = scaleX
+        newStroke.scaleY = scaleY
+        newStroke.rotation = rotation
+        // Copy abilities
+        SelectedAbility.values().forEach { ability ->
+            if (this.hasSelectedAbility(ability)) {
+                newStroke.addSelectedAbility(ability)
+            }
+        }
+        return newStroke
+    }
+
     override fun getBounds(): RectF {
         val rect = RectF(
             x + bounds.left * scaleX,

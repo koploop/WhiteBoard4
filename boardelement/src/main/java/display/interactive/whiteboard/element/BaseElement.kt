@@ -51,6 +51,11 @@ abstract class BaseElement(
     abstract fun draw(canvas: Canvas, paint: Paint)
 
     /**
+     * Create a deep copy of the element with a new unique ID.
+     */
+    abstract fun copy(): BaseElement
+
+    /**
      * Get the bounding box of the element in world coordinates.
      */
     abstract fun getBounds(): RectF

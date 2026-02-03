@@ -31,32 +31,6 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         }
     }
 
-    override fun addTextElement(text: String, x: Float, y: Float, fontSize: Float, color: Int) {
-        val element = TextElement(
-            id = UUID.randomUUID().toString(),
-            text = text,
-            fontSize = fontSize,
-            color = color,
-            x = x,
-            y = y,
-            zIndex = _uiState.value.elements.size
-        )
-        addElement(element)
-    }
-
-    override fun addImageElement(bitmap: Bitmap, x: Float, y: Float, width: Float, height: Float) {
-        val element = ImageElement(
-            id = UUID.randomUUID().toString(),
-            bitmap = bitmap,
-            x = x,
-            y = y,
-            width = width,
-            height = height,
-            zIndex = _uiState.value.elements.size
-        )
-        addElement(element)
-    }
-
     override fun deleteSelectedElements() {
         saveToUndo()
         _uiState.update { state ->
@@ -156,9 +130,6 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
                 if (element.id in state.selectedElementIds) {
                     when (element) {
                         is StrokeElement -> {
-                            element.color = color
-                        }
-                        is TextElement -> {
                             element.color = color
                         }
                     }
@@ -267,6 +238,28 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         clipboard = _uiState.value.elements.filter { it.id in selectedIds }
     }
 
+    override fun duplicateSelectedElements() {
+        val selectedIds = _uiState.value.selectedElementIds
+        if (selectedIds.isEmpty()) return
+        
+        saveToUndo()
+        _uiState.update { state ->
+            val selectedElements = state.elements.filter { it.id in selectedIds }
+            val newElements = selectedElements.map { element ->
+                val copy = element.copy()
+                copy.x += 50f
+                copy.y += 50f
+                copy.zIndex = state.elements.size + selectedElements.indexOf(element)
+                copy
+            }
+            val newSelectedIds = newElements.map { it.id }.toSet()
+            state.copy(
+                elements = state.elements + newElements,
+                selectedElementIds = newSelectedIds
+            )
+        }
+    }
+
     override fun pasteElements() {
         val toPaste = clipboard ?: return
         saveToUndo()
@@ -280,24 +273,6 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
                         color = element.color,
                         strokeWidth = element.strokeWidth,
                         type = element.type,
-                        zIndex = state.elements.size
-                    )
-                    is TextElement -> TextElement(
-                        id = UUID.randomUUID().toString(),
-                        text = element.text,
-                        fontSize = element.fontSize,
-                        color = element.color,
-                        x = element.x + 20f,
-                        y = element.y + 20f,
-                        zIndex = state.elements.size
-                    )
-                    is ImageElement -> ImageElement(
-                        id = UUID.randomUUID().toString(),
-                        bitmap = element.bitmap,
-                        x = element.x + 20f,
-                        y = element.y + 20f,
-                        width = element.bitmap.width * element.scaleX,
-                        height = element.bitmap.height * element.scaleY,
                         zIndex = state.elements.size
                     )
                     else -> element // Should not happen

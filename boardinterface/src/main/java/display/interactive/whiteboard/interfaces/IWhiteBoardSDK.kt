@@ -47,16 +47,6 @@ interface IWhiteBoardSDK {
     fun setZoomMode(enabled: Boolean)
 
     /**
-     * Add a text element to the whiteboard.
-     */
-    fun addTextElement(text: String, x: Float, y: Float, fontSize: Float, color: Int)
-
-    /**
-     * Add an image element to the whiteboard.
-     */
-    fun addImageElement(bitmap: Bitmap, x: Float, y: Float, width: Float, height: Float)
-
-    /**
      * Undo the last operation.
      */
     fun undo()
@@ -80,6 +70,11 @@ interface IWhiteBoardSDK {
      * Copy selected elements to clipboard.
      */
     fun copySelectedElements()
+
+    /**
+     * Duplicate selected elements directly on the board with an offset.
+     */
+    fun duplicateSelectedElements()
 
     /**
      * Paste elements from clipboard.
