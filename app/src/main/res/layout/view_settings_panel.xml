@@ -38,25 +38,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Interaction"
-        android:textStyle="bold" />
-
-    <ToggleButton
-        android:id="@+id/toggleMultiFinger"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textOff="Multi-Finger Off"
-        android:textOn="Multi-Finger On" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="8dp"
-        android:background="#DDDDDD" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:text="Element Actions"
         android:textStyle="bold" />
 

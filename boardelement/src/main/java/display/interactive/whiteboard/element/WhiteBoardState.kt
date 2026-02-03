@@ -14,6 +14,7 @@ data class WhiteBoardState(
     val currentStrokeColor: Int = 0xFF000000.toInt(),
     val currentStrokeWidth: Float = 5f,
     val isMultiFingerEnabled: Boolean = false,
+    val isZoomMode: Boolean = true, // V0.0.7 Zoom/Pan mode
     val canNavigate: Boolean = true, // Navigation (pan/zoom)
     val canvasScale: Float = 1f,
     val canvasOffsetX: Float = 0f,

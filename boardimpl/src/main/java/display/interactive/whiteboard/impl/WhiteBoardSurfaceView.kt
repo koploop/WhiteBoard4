@@ -120,8 +120,10 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
             element.draw(canvas, paint)
         }
 
-        // Draw selection box and handles via SelectedHandler
-        selectedHandler?.draw(canvas, uiState.elements, uiState.selectedElementIds, uiState.canvasScale)
+        // Draw selection box and handles via SelectedHandler (only if in SELECT mode and lasso selection is complete)
+        if (uiState.interactionMode == InteractionMode.SELECT && touchHandler?.isLassoSelected() == true) {
+            selectedHandler?.draw(canvas, uiState.elements, uiState.selectedElementIds, uiState.canvasScale)
+        }
 
         // Draw active paths (Real-time drawing)
         touchHandler?.activePaths?.values?.forEach { path ->
@@ -140,9 +142,9 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
             canvas.drawPath(path, paint)
         }
 
-        // Draw selection rectangle (Lasso selection)
-        touchHandler?.selectionRect?.let { rect ->
-            canvas.drawRect(rect, selectionPaint)
+        // Draw selection path (Lasso selection)
+        touchHandler?.selectionPath?.let { path ->
+            canvas.drawPath(path, selectionPaint)
         }
 
         // Draw Eraser Icon

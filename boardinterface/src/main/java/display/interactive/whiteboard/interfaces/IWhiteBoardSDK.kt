@@ -42,6 +42,11 @@ interface IWhiteBoardSDK {
     fun setMultiFingerEnabled(enabled: Boolean)
 
     /**
+     * Set zoom/pan mode (V0.0.7).
+     */
+    fun setZoomMode(enabled: Boolean)
+
+    /**
      * Add a text element to the whiteboard.
      */
     fun addTextElement(text: String, x: Float, y: Float, fontSize: Float, color: Int)

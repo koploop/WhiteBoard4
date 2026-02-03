@@ -323,6 +323,10 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         _uiState.update { it.copy(isMultiFingerEnabled = enabled) }
     }
 
+    override fun setZoomMode(enabled: Boolean) {
+        _uiState.update { it.copy(isZoomMode = enabled) }
+    }
+
     fun setCanvasTransform(scale: Float, offsetX: Float, offsetY: Float) {
         _uiState.update { it.copy(canvasScale = scale, canvasOffsetX = offsetX, canvasOffsetY = offsetY) }
     }

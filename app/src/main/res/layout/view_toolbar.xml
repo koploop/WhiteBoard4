@@ -78,13 +78,13 @@
             android:src="@drawable/ic_pen" />
 
         <ImageButton
-            android:id="@+id/btnCircle"
+            android:id="@+id/btnZoom"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="6dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_circle" />
+            android:src="@drawable/ic_zoom" />
 
         <View
             android:layout_width="16dp"

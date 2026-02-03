@@ -64,10 +64,12 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
     fun draw(canvas: Canvas, elements: List<BaseElement>, selectedIds: Set<String>, scale: Float) {
         if (selectedIds.isEmpty()) return
 
-        // Initialize or update selection state
+        // Always update selection state from current element positions
+        val selectedElements = elements.filter { it.id in selectedIds }
+        if (selectedElements.isEmpty()) return
+
         if (selectedIds != lastSelectedIds) {
             lastSelectedIds = selectedIds
-            val selectedElements = elements.filter { it.id in selectedIds }
             if (selectedIds.size == 1) {
                 val element = selectedElements[0]
                 groupRotation = element.rotation
@@ -78,11 +80,23 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
                 // Inset slightly to make the box look better
                 baseBounds.inset(-10f, -10f)
             }
+        } else {
+            // Update bounds for existing selection (to follow moving elements)
+            if (selectedIds.size == 1) {
+                val element = selectedElements[0]
+                groupRotation = element.rotation
+                baseBounds.set(element.getBounds())
+            } else {
+                // For multi-selection, we need to be careful not to reset rotation if we are currently rotating
+                if (currentMode != OperationMode.ROTATE) {
+                    baseBounds.set(getCombinedRotatedBounds(selectedElements))
+                    baseBounds.inset(-10f, -10f)
+                }
+            }
         }
 
         if (baseBounds.isEmpty) return
 
-        val selectedElements = elements.filter { it.id in selectedIds }
         val canScale = selectedElements.all { it.hasSelectedAbility(SelectedAbility.SCALE) }
         val canRotate = selectedElements.all { it.hasSelectedAbility(SelectedAbility.ROTATE) }
 
