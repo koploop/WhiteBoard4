@@ -9,7 +9,11 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+*.jks
+*.keystore
+!/gradle/wrapper/gradle-wrapper.jar
