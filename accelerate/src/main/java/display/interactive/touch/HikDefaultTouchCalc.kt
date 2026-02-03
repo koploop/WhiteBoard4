@@ -36,5 +36,4 @@ object HikDefaultTouchCalc: ITouchCalculator() {
             TouchType.Finger
         }
     }
-
 }

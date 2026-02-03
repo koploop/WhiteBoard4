@@ -317,7 +317,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
         }
 
         if (bounds.contains(localX, localY)) return OperationMode.MOVE
-
         return OperationMode.NONE
     }
 

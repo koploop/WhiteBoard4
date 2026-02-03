@@ -53,4 +53,3 @@ enum class TouchType(val type: Int) {
     // 橡皮擦
     Eraser(2)
 }
-
