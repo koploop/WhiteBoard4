@@ -81,7 +81,13 @@ class SelectionState(private val selectedHandler: SelectedHandler) : ICanvasStat
                     return true
                 }
             }
-            MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                // If it's a POINTER_UP, check if it's the pointer we are tracking
+                if (event.actionMasked == MotionEvent.ACTION_POINTER_UP && 
+                    event.getPointerId(event.actionIndex) != 0) {
+                    return false
+                }
+
                 if (isDragging) {
                     context.sdk.commitMove()
                     isLassoSelected = true
