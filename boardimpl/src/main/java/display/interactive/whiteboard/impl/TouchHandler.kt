@@ -36,6 +36,7 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) {
     private val activePoints = mutableMapOf<Int, MutableList<PointF>>()
     private val activeStrokeIds = mutableMapOf<Int, String>()
     private val lastPoints = mutableMapOf<Int, Pair<Float, Float>>()
+    private val lastRawPoints = mutableMapOf<Int, Pair<Float, Float>>()
     
     // For Pan and Zoom (V0.0.7)
     private var lastZoomDistance = 0f
@@ -141,6 +142,7 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) {
                     activePoints.clear()
                     activeStrokeIds.clear()
                     lastPoints.clear()
+                    lastRawPoints.clear()
                     AccelerateAddr.clearVopByJar()
 
                     val dx = event.getX(0) - event.getX(1)
@@ -236,6 +238,14 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) {
                 activePoints[pointerId] = mutableListOf(PointF(x, y))
                 activeStrokeIds[pointerId] = UUID.randomUUID().toString()
                 lastPoints[pointerId] = Pair(x, y)
+                
+                // Record raw coordinates for accelerate canvas
+                val index = event.findPointerIndex(pointerId)
+                if (index >= 0) {
+                    val rawX = event.getRawX(index)
+                    val rawY = event.getRawY(index)
+                    lastRawPoints[pointerId] = Pair(rawX, rawY)
+                }
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
@@ -251,14 +261,19 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) {
                     activePaths[pId]?.lineTo(pX, pY)
                     activePoints[pId]?.add(PointF(pX, pY))
 
-                    // Draw on accelerate layer
+                    // Draw on accelerate layer using raw coordinates
                     accelerateCanvas?.let { ac ->
                         acceleratePaint.color = state.currentStrokeColor
-                        acceleratePaint.strokeWidth = state.currentStrokeWidth
-                        val lastPoint = lastPoints[pId]
-                        if (lastPoint != null) {
-                            ac.accelerateCanvas.drawLine(lastPoint.first, lastPoint.second, pX, pY, acceleratePaint)
+                        acceleratePaint.strokeWidth = state.currentStrokeWidth * state.canvasScale
+                        
+                        val rawX = event.getRawX(i)
+                        val rawY = event.getRawY(i)
+                        
+                        val lastRawPoint = lastRawPoints[pId]
+                        if (lastRawPoint != null) {
+                            ac.accelerateCanvas.drawLine(lastRawPoint.first, lastRawPoint.second, rawX, rawY, acceleratePaint)
                         }
+                        lastRawPoints[pId] = Pair(rawX, rawY)
                     }
                     lastPoints[pId] = Pair(pX, pY)
                 }
@@ -293,6 +308,7 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) {
                 activePoints.remove(pointerId)
                 activeStrokeIds.remove(pointerId)
                 lastPoints.remove(pointerId)
+                lastRawPoints.remove(pointerId)
 
                 // If all fingers are up, clear accelerate layer after 300ms
                 if (activePaths.isEmpty()) {

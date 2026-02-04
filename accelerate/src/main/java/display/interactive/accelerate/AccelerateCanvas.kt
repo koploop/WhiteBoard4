@@ -12,7 +12,7 @@ import androidx.core.graphics.createBitmap
  * @author lvhan5
  * @date 2026/1/30
  * @version v1.0.0
- * dscription here
+ * 加速画布
  */
 class AccelerateCanvas(val context: Context, val size: Size) {
 

@@ -141,7 +141,7 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
             }
         }
 
-        // Draw selection box and handles via SelectedHandler (only if in SELECT mode and lasso selection is complete)
+        // Draw selection box and handles via SelectedHandler
         if (uiState.interactionMode == InteractionMode.SELECT && touchHandler?.isLassoSelected() == true) {
             selectedHandler?.draw(canvas, uiState.elements, uiState.selectedElementIds, uiState.canvasScale)
         }

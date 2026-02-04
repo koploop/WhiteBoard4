@@ -129,7 +129,7 @@
 
 ### V0.0.4 - 模块化重构与 SDK 支持
 - **模块化重构**: 
-    - 将项目拆分为 `boardelement`, `boardinterface`, `boardimpl`, `boardpersist` 等多个模块.
+    - 将项目拆分为 `boardelement`, `boardinterface`, `boardimpl`, `boardpersist` 等多个模块。
     - 实现 UI 与业务逻辑的彻底解耦。
 - **SDK 接口设计**: 
     - 定义 `IWhiteBoardSDK` 接口，规范白板功能的调用方式。
