@@ -37,6 +37,13 @@ abstract class ITouchCalculator {
     }
 
     /**
+     * 将touchMajor值转为像素值
+     */
+    open fun transformMajor2Pixel(major: Float): Float {
+        return transformTouchMajor2MM(major) / transformPixel2MMFactor()
+    }
+
+    /**
      * 获取当前触摸点的类型
      */
     open fun getTouchType(major: Float): TouchType {
@@ -50,6 +57,6 @@ enum class TouchType(val type: Int) {
     Pen(0),
     // 手指触摸
     Finger(1),
-    // 橡皮擦
-    Eraser(2)
+    // 手心/手掌/拳头擦除
+    HandEraser(2)
 }

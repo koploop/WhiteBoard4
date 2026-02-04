@@ -3,6 +3,12 @@
 本项目的所有历史对话记录都将记录在此文件中。
 
 ## 2026-02-04
+- 实现 `e:\SVN\WhiteBoard4\docs\RequestDoc.md` 中RDV0.0.9版本的需求：
+    - **手掌橡皮擦功能**: 在 `PenState` 中集成了 `HikDefaultTouchCalc`，根据 `touchMajor` 自动识别手掌接触。
+    - **模式切换**: 当识别为 `HandEraser` 时，自动在书写模式下执行擦除操作。
+    - **动态大小**: 橡皮擦半径初始大小与触摸面积一致。
+    - **速度感应**: 实现了基于移动速度的动态半径调整，移动越快擦除范围越大。
+    - **可视化反馈**: 在 `PenState.draw` 中添加了动态橡皮擦图标的绘制逻辑。
 - 实现 V0.0.8 版本的并行状态机架构：
     - 创建了独立的 `boardstate` 模块，用于解耦交互逻辑。
     - 引入了 `CanvasStateMachine` 并行状态机，通过 Orthogonal Regions（正交区域）管理 `TOOL`（工具）和 `NAVIGATION`（导航）状态。
@@ -52,4 +58,3 @@
 ## 2026-01-31
 - 进行一次微重构，具体需求参考RequestDoc.md文档的V0.04版本需求。并且更新设计文档（WhiteBoard.md）, 同时本次修改内容更新到CHANGELOG.md
 - 执行编译安装验证
-

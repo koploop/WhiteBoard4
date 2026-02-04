@@ -26,12 +26,16 @@ object HikDefaultTouchCalc: ITouchCalculator() {
         return super.transformTouchMajor2MM(major)
     }
 
+    override fun transformMajor2Pixel(major: Float): Float {
+        return super.transformMajor2Pixel(major)
+    }
+
     override fun getTouchType(major: Float): TouchType {
         val mm = transformTouchMajor2MM(major)
         return if (mm < 4) {
             TouchType.Pen
         } else if (mm > 40) {
-            TouchType.Eraser
+            TouchType.HandEraser
         } else {
             TouchType.Finger
         }
