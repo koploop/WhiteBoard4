@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'display.interactive.whiteboard.impl'
+    namespace 'display.interactive.whiteboard.state'
     compileSdk 35
 
     defaultConfig {
@@ -29,11 +29,9 @@ android {
 }
 
 dependencies {
-    api project(':boardinterface')
-    api project(':boardelement')
-    api project(':boardstate')
-    api project(':accelerate')
+    implementation project(':boardelement')
+    implementation project(':boardinterface')
+    implementation project(':accelerate')
     implementation libs.androidx.core.ktx
     implementation libs.androidx.appcompat
-    implementation libs.androidx.lifecycle.runtime.ktx
 }

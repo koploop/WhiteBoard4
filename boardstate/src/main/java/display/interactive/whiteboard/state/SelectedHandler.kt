@@ -1,17 +1,18 @@
-package display.interactive.whiteboard.impl
+package display.interactive.whiteboard.state
 
 import android.graphics.*
 import android.view.MotionEvent
 import display.interactive.whiteboard.element.BaseElement
 import display.interactive.whiteboard.element.SelectedAbility
 import display.interactive.whiteboard.element.StrokeElement
+import display.interactive.whiteboard.interfaces.IWhiteBoardSDK
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
 /**
  * Handles selection box drawing and interactions (move, scale, rotate, menu).
  */
-class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
+class SelectedHandler(private val sdk: IWhiteBoardSDK) {
 
     private val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFF2196F3.toInt()
@@ -63,7 +64,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
     fun draw(canvas: Canvas, elements: List<BaseElement>, selectedIds: Set<String>, scale: Float) {
         if (selectedIds.isEmpty()) return
 
-        // Always update selection state from current element positions
         val selectedElements = elements.filter { it.id in selectedIds }
         if (selectedElements.isEmpty()) return
 
@@ -76,17 +76,14 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
             } else {
                 groupRotation = 0f
                 baseBounds.set(getCombinedRotatedBounds(selectedElements))
-                // Inset slightly to make the box look better
                 baseBounds.inset(-10f, -10f)
             }
         } else {
-            // Update bounds for existing selection (to follow moving elements)
             if (selectedIds.size == 1) {
                 val element = selectedElements[0]
                 groupRotation = element.rotation
                 baseBounds.set(element.getBounds())
             } else {
-                // For multi-selection, we need to be careful not to reset rotation if we are currently rotating
                 if (currentMode != OperationMode.ROTATE) {
                     baseBounds.set(getCombinedRotatedBounds(selectedElements))
                     baseBounds.inset(-10f, -10f)
@@ -99,13 +96,11 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
         val canScale = selectedElements.all { it.hasSelectedAbility(SelectedAbility.SCALE) }
         val canRotate = selectedElements.all { it.hasSelectedAbility(SelectedAbility.ROTATE) }
 
-        // Draw selection box and handles
         canvas.save()
         val centerX = baseBounds.centerX()
         val centerY = baseBounds.centerY()
         canvas.rotate(groupRotation, centerX, centerY)
 
-        // Draw selection rectangle
         canvas.drawRect(baseBounds, selectionPaint)
 
         if (canScale) {
@@ -124,8 +119,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
 
         canvas.restore()
 
-        // Draw menu upright at the bottom of the VISUAL AABB of the rotated box
-        // This visual AABB changes as we rotate, which matches "变的只是视觉上的外接矩形"
         val visualBounds = getVisualAABB(baseBounds, groupRotation)
         drawMenu(canvas, visualBounds, selectedElements)
     }
@@ -192,7 +185,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
             )
             menuItems.add(MenuItem(ability, itemRect))
 
-            // Draw placeholder for icon
             val textPaint = Paint().apply {
                 color = Color.BLACK
                 textSize = 20f
@@ -215,7 +207,7 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
 
         val selectedElements = elements.filter { it.id in selectedIds }
 
-        when (event.action) {
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 lastX = x
                 lastY = y
@@ -251,7 +243,7 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
                         val currentRot = atan2(y - initialPivotY, x - initialPivotX)
                         val deltaRot = Math.toDegrees((currentRot - initialRotation).toDouble()).toFloat()
                         handleRotate(deltaRot, initialPivotX, initialPivotY, selectedElements)
-                        initialRotation = currentRot // Update for next move
+                        initialRotation = currentRot
                     }
                     else -> {}
                 }
@@ -276,11 +268,9 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
             SelectedAbility.DELETE -> sdk.deleteSelectedElements()
             SelectedAbility.COPY -> sdk.duplicateSelectedElements()
             SelectedAbility.CHANGE_ORDER -> {
-                // Toggle between front/back for simplicity, or we could show another menu
                 sdk.bringToFront()
             }
             SelectedAbility.CHANGE_COLOR -> {
-                // Show color picker - for now just cycle colors
                 val colors = intArrayOf(Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, Color.YELLOW)
                 val currentColor = (sdk.uiState.value.elements.find { it.id in sdk.uiState.value.selectedElementIds } as? StrokeElement)?.color ?: Color.BLACK
                 val nextColor = colors[(colors.indexOf(currentColor) + 1) % colors.size]
@@ -291,10 +281,8 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
     }
 
     private fun getModeAt(x: Float, y: Float, bounds: RectF, selectedElements: List<BaseElement>): OperationMode {
-        // Check menu first (menu is NOT rotated)
         if (menuItems.any { it.rect.contains(x, y) }) return OperationMode.MENU
 
-        // Transform touch point to local unrotated space of the selection box
         val matrix = Matrix()
         matrix.postRotate(-groupRotation, bounds.centerX(), bounds.centerY())
         val pts = floatArrayOf(x, y)
@@ -323,7 +311,7 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
 
     private fun isHit(tx: Float, ty: Float, hx: Float, hy: Float): Boolean {
         val dist = sqrt(((tx - hx) * (tx - hx) + (ty - hy) * (ty - hy)).toDouble())
-        return dist < handleSize * 1.5f // Larger hit area
+        return dist < handleSize * 1.5f
     }
 
     private fun handleScale(dx: Float, dy: Float, bounds: RectF, elements: List<BaseElement>) {
@@ -331,7 +319,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
         val oldHeight = bounds.height()
         if (oldWidth <= 10f || oldHeight <= 10f) return
 
-        // Transform movement to local coordinate system
         val matrix = Matrix()
         matrix.postRotate(-groupRotation)
         val dpts = floatArrayOf(dx, dy)
@@ -372,11 +359,9 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
             else -> return
         }
 
-        // Apply proportional constraint: use the one with larger change
         val s = if (Math.abs(sx - 1f) > Math.abs(sy - 1f)) sx else sy
         if (s <= 0.01f) return
 
-        // Pivot also needs to be rotated back to world space for the SDK call
         val pMatrix = Matrix()
         pMatrix.postRotate(groupRotation, bounds.centerX(), bounds.centerY())
         val ppts = floatArrayOf(pivotX, pivotY)
@@ -386,7 +371,6 @@ class SelectedHandler(private val sdk: WhiteBoardSDKImpl) {
 
         sdk.scaleSelectedElements(s, s, worldPivotX, worldPivotY)
 
-        // Update baseBounds
         val scaleMatrix = Matrix()
         scaleMatrix.postScale(s, s, pivotX, pivotY)
         scaleMatrix.mapRect(baseBounds)

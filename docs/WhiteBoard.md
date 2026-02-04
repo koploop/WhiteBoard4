@@ -32,7 +32,12 @@
 ### 4. boardpersist 模块 (持久化层)
 - 负责白板数据的保存与加载（预留模块）。
 
-### 5. accelerate 模块 (硬件加速辅助)
+### 5. boardstate 模块 (状态机管理)
+- **CanvasStateMachine**: 并行状态机核心，管理不同区域（工具、导航、多指）的状态。
+- **ICanvasState**: 状态接口，定义了触摸处理、进入/退出、绘制等逻辑。
+- **PenState/SelectionState/EraserState/ZoomPanState**: 具体的功能状态实现。
+
+### 6. accelerate 模块 (硬件加速辅助)
 - **AccelerateCanvas**: 加速图层组件，利用硬件厂商提供的显示缓冲区实现超低延迟的划线反馈。
 
 ### 6. app 模块 (宿主应用/Demo)

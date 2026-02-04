@@ -112,4 +112,59 @@ interface IWhiteBoardSDK {
      * Set the background image.
      */
     fun setBackgroundImage(bitmap: Bitmap)
+
+    /**
+     * Add an element to the board.
+     */
+    fun addElement(element: BaseElement)
+
+    /**
+     * Erase elements at the given world coordinates.
+     */
+    fun eraseAt(x: Float, y: Float, radius: Float)
+
+    /**
+     * Update the eraser position for rendering.
+     */
+    fun updateEraserPosition(position: android.graphics.PointF?)
+
+    /**
+     * Select an element by its ID.
+     */
+    fun selectElement(id: String, multiSelect: Boolean = false)
+
+    /**
+     * Deselect all elements.
+     */
+    fun deselectAll()
+
+    /**
+     * Move selected elements by the given offset in world coordinates.
+     */
+    fun moveSelectedElements(dx: Float, dy: Float)
+
+    /**
+     * Commit the current move operation.
+     */
+    fun commitMove()
+
+    /**
+     * Set the canvas transformation.
+     */
+    fun setCanvasTransform(scale: Float, offsetX: Float, offsetY: Float)
+
+    /**
+     * Scale selected elements.
+     */
+    fun scaleSelectedElements(sx: Float, sy: Float, pivotX: Float, pivotY: Float)
+
+    /**
+     * Rotate selected elements.
+     */
+    fun rotateSelectedElements(deltaRotation: Float, pivotX: Float, pivotY: Float)
+
+    /**
+     * Set color of selected elements.
+     */
+    fun setSelectedElementsColor(color: Int)
 }

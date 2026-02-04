@@ -29,27 +29,9 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeWidth = 1f
     }
-    private val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF2196F3.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-        pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
-    }
-    private val selectedGroupPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF2196F3.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 3f
-    }
-    private val eraserIconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.LTGRAY
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-        alpha = 180
-    }
 
     private var uiState: WhiteBoardState = WhiteBoardState()
     private var touchHandler: TouchHandler? = null
-    private var selectedHandler: SelectedHandler? = null
     private var accelerateCanvas: AccelerateCanvas? = null
 
     // V0.1.2 Optimization: Static Layer Caching
@@ -68,14 +50,12 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
     fun setSDK(sdk: WhiteBoardSDKImpl) {
         this.sdk = sdk
         this.touchHandler = TouchHandler(sdk)
-        this.selectedHandler = SelectedHandler(sdk)
-        this.touchHandler?.setSelectedHandler(this.selectedHandler!!)
-        this.accelerateCanvas?.let { touchHandler?.setAccelerateCanvas(it) }
+        this.accelerateCanvas?.let { touchHandler?.accelerateCanvas = it }
     }
 
     fun setAccelerateCanvas(canvas: AccelerateCanvas) {
         this.accelerateCanvas = canvas
-        this.touchHandler?.setAccelerateCanvas(canvas)
+        this.touchHandler?.accelerateCanvas = canvas
     }
 
     fun updateState(state: WhiteBoardState) {
@@ -133,7 +113,7 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
             canvas.restore()
         }
 
-        // Draw selected elements and active paths (Dynamic Layer)
+        // Draw selected elements (Dynamic Layer)
         uiState.sortedElements.forEach { element ->
             if (element.id in uiState.selectedElementIds) {
                 element.isSelected = true
@@ -141,39 +121,8 @@ class WhiteBoardSurfaceView @JvmOverloads constructor(
             }
         }
 
-        // Draw selection box and handles via SelectedHandler
-        if (uiState.interactionMode == InteractionMode.SELECT && touchHandler?.isLassoSelected() == true) {
-            selectedHandler?.draw(canvas, uiState.elements, uiState.selectedElementIds, uiState.canvasScale)
-        }
-
-        // Draw active paths (Real-time drawing)
-        touchHandler?.activePaths?.values?.forEach { path ->
-            paint.reset()
-            paint.color = uiState.currentStrokeColor
-            paint.strokeWidth = uiState.currentStrokeWidth
-            paint.style = Paint.Style.STROKE
-            paint.strokeJoin = Paint.Join.ROUND
-            paint.strokeCap = Paint.Cap.ROUND
-
-            when (uiState.currentStrokeType) {
-                StrokeElement.StrokeType.PEN -> paint.alpha = 255
-                StrokeElement.StrokeType.PENCIL -> paint.alpha = 200
-                StrokeElement.StrokeType.MARKER -> paint.alpha = 128
-            }
-            canvas.drawPath(path, paint)
-        }
-
-        // Draw selection path (Lasso selection)
-        touchHandler?.selectionPath?.let { path ->
-            canvas.drawPath(path, selectionPaint)
-        }
-
-        // Draw Eraser Icon
-        if (uiState.interactionMode == InteractionMode.ERASER) {
-            uiState.eraserPosition?.let { pos ->
-                canvas.drawCircle(pos.x, pos.y, 20f, eraserIconPaint)
-            }
-        }
+        // Draw tool-specific content (selection box, active paths, eraser icon, etc.)
+        touchHandler?.draw(canvas)
 
         canvas.restore()
     }

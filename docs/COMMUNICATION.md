@@ -3,6 +3,13 @@
 本项目的所有历史对话记录都将记录在此文件中。
 
 ## 2026-02-04
+- 实现 V0.0.8 版本的并行状态机架构：
+    - 创建了独立的 `boardstate` 模块，用于解耦交互逻辑。
+    - 引入了 `CanvasStateMachine` 并行状态机，通过 Orthogonal Regions（正交区域）管理 `TOOL`（工具）和 `NAVIGATION`（导航）状态。
+    - 实现了 `PenState`, `SelectionState`, `EraserState`, `ZoomPanState` 等具体状态。
+    - 重构了 `TouchHandler`，将其职责转变为状态机上下文和分发器。
+    - 升级了 `IWhiteBoardSDK` 接口，暴露了 `addElement`, `eraseAt`, `selectElement` 等原子操作。
+    - 优化了渲染流程：`WhiteBoardSurfaceView` 不再处理具体的绘制细节，而是统一委托给 `TouchHandler.draw()` 进行状态感知的绘制。
 - 修复加速画布笔迹同步问题：
     - 分析并定位了画布平移/缩放后，加速层笔迹与逻辑层笔迹位置不重合的原因（加速画布是屏幕坐标系且不随白板移动）。
     - 重构了 `TouchHandler` 的 `handleDrawEvent`，引入 `lastRawPoints` 追踪原始触控坐标。

@@ -16,6 +16,7 @@
             <option value="$PROJECT_DIR$/boardimpl" />
             <option value="$PROJECT_DIR$/boardinterface" />
             <option value="$PROJECT_DIR$/boardpersist" />
+            <option value="$PROJECT_DIR$/boardstate" />
           </set>
         </option>
       </GradleProjectSettings>

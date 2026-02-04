@@ -55,7 +55,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         }
     }
 
-    fun addElement(element: BaseElement) {
+    override fun addElement(element: BaseElement) {
         saveToUndo()
         updateElementsState(_uiState.value.elements + element)
     }
@@ -75,11 +75,11 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         _uiState.update { it.copy(interactionMode = mode, eraserPosition = null) }
     }
 
-    fun updateEraserPosition(position: PointF?) {
+    override fun updateEraserPosition(position: PointF?) {
         _uiState.update { it.copy(eraserPosition = position) }
     }
 
-    fun selectElement(id: String, multiSelect: Boolean = false) {
+    override fun selectElement(id: String, multiSelect: Boolean) {
         _uiState.update { state ->
             val newSelection = if (multiSelect) {
                 state.selectedElementIds + id
@@ -93,7 +93,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         }
     }
 
-    fun deselectAll() {
+    override fun deselectAll() {
         _uiState.update { state ->
             state.copy(
                 selectedElementIds = emptySet(),
@@ -120,7 +120,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         }
     }
 
-    fun scaleSelectedElements(sx: Float, sy: Float, pivotX: Float, pivotY: Float) {
+    override fun scaleSelectedElements(sx: Float, sy: Float, pivotX: Float, pivotY: Float) {
         val elements = _uiState.value.elements
         elements.forEach { element ->
             if (element.id in _uiState.value.selectedElementIds) {
@@ -136,7 +136,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         updateElementsState(elements, incrementStructural = false)
     }
 
-    fun rotateSelectedElements(deltaRotation: Float, pivotX: Float, pivotY: Float) {
+    override fun rotateSelectedElements(deltaRotation: Float, pivotX: Float, pivotY: Float) {
         val elements = _uiState.value.elements
         elements.forEach { element ->
             if (element.id in _uiState.value.selectedElementIds) {
@@ -156,7 +156,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         updateElementsState(elements, incrementStructural = false)
     }
 
-    fun setSelectedElementsColor(color: Int) {
+    override fun setSelectedElementsColor(color: Int) {
         saveToUndo()
         val elements = _uiState.value.elements
         elements.forEach { element ->
@@ -193,7 +193,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         updateElementsState(newElements)
     }
 
-    fun moveSelectedElements(dx: Float, dy: Float) {
+    override fun moveSelectedElements(dx: Float, dy: Float) {
         val elements = _uiState.value.elements
         elements.forEach { element ->
             if (element.id in _uiState.value.selectedElementIds) {
@@ -204,7 +204,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         updateElementsState(elements, incrementStructural = false)
     }
 
-    fun eraseAt(x: Float, y: Float, radius: Float) {
+    override fun eraseAt(x: Float, y: Float, radius: Float) {
         // Use QuadTree to find candidate elements
         val range = RectF(x - radius, y - radius, x + radius, y + radius)
         val candidates = mutableSetOf<BaseElement>()
@@ -235,7 +235,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         }
     }
 
-    fun commitMove() {
+    override fun commitMove() {
         saveToUndo()
     }
 
@@ -332,7 +332,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         _uiState.update { it.copy(isZoomMode = enabled) }
     }
 
-    fun setCanvasTransform(scale: Float, offsetX: Float, offsetY: Float) {
+    override fun setCanvasTransform(scale: Float, offsetX: Float, offsetY: Float) {
         _uiState.update { it.copy(canvasScale = scale, canvasOffsetX = offsetX, canvasOffsetY = offsetY) }
     }
 }
