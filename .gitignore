@@ -11,10 +11,10 @@
 /build
 /.kotlin/
 **/build/
-/captures
+# /captures
 .externalNativeBuild
 .cxx
 local.properties
-*.jks
-*.keystore
+# *.jks
+# *.keystore
 !/gradle/wrapper/gradle-wrapper.jar
