@@ -69,10 +69,39 @@ class MainActivity : AppCompatActivity() {
         }
         toolbarView.setOnZoomClickListener {
             val currentState = sdk.uiState.value
-            val nextZoomMode = !currentState.isZoomMode
-            sdk.setZoomMode(nextZoomMode)
-            sdk.setMultiFingerEnabled(!nextZoomMode)
-            Toast.makeText(this, if (nextZoomMode) "Zoom/Pan Enabled" else "Multi-Finger Writing Enabled", Toast.LENGTH_SHORT).show()
+            if (!currentState.isZoomMode) {
+                // Enable Zoom
+                sdk.setZoomMode(true)
+                sdk.setMultiFingerEnabled(false)
+
+                if (currentState.isFingerSeparateMode) {
+                    sdk.setFingerSeparateMode(false)
+                    Toast.makeText(this, "画布缩放已开启,已为您关闭手笔分离", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Disable Zoom
+                sdk.setZoomMode(false)
+                sdk.setMultiFingerEnabled(true)
+            }
+        }
+
+        toolbarView.setOnFingerSeparateClickListener {
+            val currentState = sdk.uiState.value
+            if (!currentState.isFingerSeparateMode) {
+                // Enable Finger Separate
+                sdk.setFingerSeparateMode(true)
+
+                if (currentState.isZoomMode) {
+                    sdk.setZoomMode(false)
+                    sdk.setMultiFingerEnabled(true)
+                    Toast.makeText(this, "手笔分离开启,已为您关闭画布缩放", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "手笔分离开启", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Disable Finger Separate
+                sdk.setFingerSeparateMode(false)
+            }
         }
 
         toolbarView.setOnSelectClickListener {
@@ -139,6 +168,8 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sdk.uiState.collect { state ->
                     whiteBoardView.updateState(state)
+                    toolbarView.setZoomButtonState(state.isZoomMode)
+                    toolbarView.setFingerSeparateButtonState(state.isFingerSeparateMode)
                 }
             }
         }

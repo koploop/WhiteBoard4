@@ -54,6 +54,11 @@ interface IWhiteBoardSDK {
     fun setZoomMode(enabled: Boolean)
 
     /**
+     * Set finger separate mode (V0.1.0).
+     */
+    fun setFingerSeparateMode(enabled: Boolean)
+
+    /**
      * Undo the last operation.
      */
     fun undo()

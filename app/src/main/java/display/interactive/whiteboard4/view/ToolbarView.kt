@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageButton
+import android.content.res.ColorStateList
 import androidx.constraintlayout.widget.ConstraintLayout
 import display.interactive.whiteboard4.R
 
@@ -39,6 +41,20 @@ class ToolbarView @JvmOverloads constructor(
 
     fun setOnZoomClickListener(listener: (View) -> Unit) {
         findViewById<View>(R.id.btnZoom).setOnClickListener(listener)
+    }
+
+    fun setOnFingerSeparateClickListener(listener: (View) -> Unit) {
+        findViewById<View>(R.id.btnFingerSeparate).setOnClickListener(listener)
+    }
+
+    fun setZoomButtonState(isActive: Boolean) {
+        val color = if (isActive) context.getColor(R.color.white) else context.getColor(R.color.disable_gray)
+        findViewById<ImageButton>(R.id.btnZoom).backgroundTintList = ColorStateList.valueOf(color)
+    }
+
+    fun setFingerSeparateButtonState(isActive: Boolean) {
+        val color = if (isActive) context.getColor(R.color.white) else context.getColor(R.color.disable_gray)
+        findViewById<ImageButton>(R.id.btnFingerSeparate).backgroundTintList = ColorStateList.valueOf(color)
     }
 
     fun setOnSettingsClickListener(listener: (View) -> Unit) {
