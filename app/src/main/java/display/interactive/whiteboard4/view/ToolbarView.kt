@@ -100,4 +100,16 @@ class ToolbarView @JvmOverloads constructor(
     fun setOnMapClickListener(listener: (View) -> Unit) {
         findViewById<View>(R.id.btnMap).setOnClickListener(listener)
     }
+
+    fun setEraserEnabled(enabled: Boolean) {
+        val btn = findViewById<ImageButton>(R.id.btnEraser)
+        btn.isEnabled = enabled
+        btn.alpha = if (enabled) 1.0f else 0.5f
+    }
+
+    fun setSelectEnabled(enabled: Boolean) {
+        val btn = findViewById<ImageButton>(R.id.btnSelect)
+        btn.isEnabled = enabled
+        btn.alpha = if (enabled) 1.0f else 0.5f
+    }
 }

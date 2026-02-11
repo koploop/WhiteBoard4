@@ -76,12 +76,15 @@ class MainActivity : AppCompatActivity() {
 
                 if (currentState.isFingerSeparateMode) {
                     sdk.setFingerSeparateMode(false)
-                    Toast.makeText(this, "画布缩放已开启,已为您关闭手笔分离", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "已为您开启画布缩放, 多指书写已关闭", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "已为您开启画布缩放, 多指书写已关闭", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 // Disable Zoom
                 sdk.setZoomMode(false)
                 sdk.setMultiFingerEnabled(true)
+                Toast.makeText(this, "已为您开启多指书写, 画布缩放已关闭", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -90,6 +93,12 @@ class MainActivity : AppCompatActivity() {
             if (!currentState.isFingerSeparateMode) {
                 // Enable Finger Separate
                 sdk.setFingerSeparateMode(true)
+
+                // If currently in Select or Eraser mode, switch to Draw mode
+                if (currentState.interactionMode == InteractionMode.SELECT || 
+                    currentState.interactionMode == InteractionMode.ERASER) {
+                    sdk.setInteractionMode(InteractionMode.DRAW)
+                }
 
                 if (currentState.isZoomMode) {
                     sdk.setZoomMode(false)
@@ -170,6 +179,11 @@ class MainActivity : AppCompatActivity() {
                     whiteBoardView.updateState(state)
                     toolbarView.setZoomButtonState(state.isZoomMode)
                     toolbarView.setFingerSeparateButtonState(state.isFingerSeparateMode)
+                    
+                    // Update Select and Eraser buttons enabled state
+                    val isFingerSeparate = state.isFingerSeparateMode
+                    toolbarView.setSelectEnabled(!isFingerSeparate)
+                    toolbarView.setEraserEnabled(!isFingerSeparate)
                 }
             }
         }
