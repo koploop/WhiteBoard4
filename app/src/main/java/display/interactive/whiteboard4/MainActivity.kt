@@ -1,11 +1,13 @@
 package display.interactive.whiteboard4
 
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
 import android.os.Bundle
 import android.util.Size
 import android.view.View
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ToggleButton
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -16,15 +18,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import display.interactive.accelerate.AccelerateCanvas
 import display.interactive.whiteboard.element.BackgroundType
+import display.interactive.whiteboard.element.ImageElement
 import display.interactive.whiteboard.element.InteractionMode
 import display.interactive.whiteboard.impl.WhiteBoardSDKImpl
 import display.interactive.whiteboard.impl.WhiteBoardSurfaceView
-import kotlinx.coroutines.launch
-
-import android.widget.Toast
+import display.interactive.whiteboard4.view.MoreToolsPanelView
 import display.interactive.whiteboard4.view.SettingsPanelView
 import display.interactive.whiteboard4.view.ToolbarView
-import display.interactive.whiteboard4.view.MoreToolsPanelView
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
 
@@ -33,6 +35,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsPanel: SettingsPanelView
     private lateinit var toolbarView: ToolbarView
     private lateinit var moreToolsPanel: MoreToolsPanelView
+    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        handleImagePicked(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,6 +152,14 @@ class MainActivity : AppCompatActivity() {
             moreToolsPanel.show()
         }
 
+        moreToolsPanel.setOnToolClickListener { item ->
+            if (item.id == "image") {
+                imagePickerLauncher.launch("image/*")
+            } else {
+                Toast.makeText(this, "该功能暂未实现", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Settings Panel
         settingsPanel.setOnBgGridClickListener {
             sdk.setBackgroundType(BackgroundType.GRID)
@@ -170,6 +183,63 @@ class MainActivity : AppCompatActivity() {
         settingsPanel.setOnBackClickListener {
             sdk.sendToBack()
         }
+    }
+
+    private fun handleImagePicked(uri: Uri?) {
+        if (uri == null) {
+            return
+        }
+        runCatching {
+            val source = ImageDecoder.createSource(contentResolver, uri)
+            ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
+        }.onSuccess { bitmap ->
+            addImageElementToBoard(scaleBitmapIfNeeded(bitmap))
+            Toast.makeText(this, "图片已插入", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(this, "图片插入失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun scaleBitmapIfNeeded(bitmap: Bitmap): Bitmap {
+        val maxSide = 2048f
+        val sourceMax = maxOf(bitmap.width, bitmap.height).toFloat()
+        if (sourceMax <= maxSide) {
+            return bitmap
+        }
+        val ratio = maxSide / sourceMax
+        val targetWidth = (bitmap.width * ratio).toInt().coerceAtLeast(1)
+        val targetHeight = (bitmap.height * ratio).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+    }
+
+    private fun addImageElementToBoard(bitmap: Bitmap) {
+        val state = sdk.uiState.value
+        val viewWidth = whiteBoardView.width.toFloat().coerceAtLeast(1f)
+        val viewHeight = whiteBoardView.height.toFloat().coerceAtLeast(1f)
+        val worldCenterX = (viewWidth / 2f - state.canvasOffsetX) / state.canvasScale
+        val worldCenterY = (viewHeight / 2f - state.canvasOffsetY) / state.canvasScale
+
+        val maxWorldWidth = viewWidth * 0.5f / state.canvasScale
+        val maxWorldHeight = viewHeight * 0.5f / state.canvasScale
+        val widthRatio = maxWorldWidth / bitmap.width.toFloat()
+        val heightRatio = maxWorldHeight / bitmap.height.toFloat()
+        val displayRatio = minOf(widthRatio, heightRatio, 1f).coerceAtLeast(0.1f)
+        val displayWidth = bitmap.width * displayRatio
+        val displayHeight = bitmap.height * displayRatio
+
+        val imageElement = ImageElement(
+            id = UUID.randomUUID().toString(),
+            bitmap = bitmap,
+            elementWidth = displayWidth,
+            elementHeight = displayHeight,
+            zIndex = state.elements.size
+        )
+        imageElement.x = worldCenterX
+        imageElement.y = worldCenterY
+        sdk.addElement(imageElement)
+        sdk.selectElement(imageElement.id)
     }
 
     private fun observeState() {

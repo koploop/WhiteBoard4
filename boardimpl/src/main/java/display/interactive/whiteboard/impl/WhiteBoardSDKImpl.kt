@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.Stack
-import java.util.UUID
 
 /**
  * Implementation of the WhiteBoard SDK.
@@ -124,13 +123,12 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         val elements = _uiState.value.elements
         elements.forEach { element ->
             if (element.id in _uiState.value.selectedElementIds) {
-                // Scale property
                 element.scaleX *= sx
                 element.scaleY *= sy
 
-                // Scale position relative to pivot
                 element.x = pivotX + (element.x - pivotX) * sx
                 element.y = pivotY + (element.y - pivotY) * sy
+                notifyTransformListener(element, scaleX = sx, scaleY = sy)
             }
         }
         updateElementsState(elements, incrementStructural = false)
@@ -140,10 +138,8 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         val elements = _uiState.value.elements
         elements.forEach { element ->
             if (element.id in _uiState.value.selectedElementIds) {
-                // Rotate property
                 element.rotation += deltaRotation
 
-                // Rotate position relative to pivot
                 val dx = element.x - pivotX
                 val dy = element.y - pivotY
                 val cos = Math.cos(Math.toRadians(deltaRotation.toDouble())).toFloat()
@@ -151,6 +147,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
 
                 element.x = pivotX + (dx * cos - dy * sin)
                 element.y = pivotY + (dx * sin + dy * cos)
+                notifyTransformListener(element, rotation = deltaRotation)
             }
         }
         updateElementsState(elements, incrementStructural = false)
@@ -199,6 +196,7 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
             if (element.id in _uiState.value.selectedElementIds) {
                 element.x += dx
                 element.y += dy
+                notifyTransformListener(element, dx = dx, dy = dy)
             }
         }
         updateElementsState(elements, incrementStructural = false)
@@ -295,21 +293,35 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         val toPaste = clipboard ?: return
         saveToUndo()
         val elements = _uiState.value.elements
-        val newElements = toPaste.map { element ->
-            // Create a copy with a new ID and slightly offset position
-            when (element) {
-                is StrokeElement -> StrokeElement(
-                    id = UUID.randomUUID().toString(),
-                    points = element.points.map { p -> PointF(p.x + 20f, p.y + 20f) },
-                    color = element.color,
-                    strokeWidth = element.strokeWidth,
-                    type = element.type,
-                    zIndex = elements.size
-                )
-                else -> element // Should not happen
-            }
+        val newElements = toPaste.mapIndexed { index, element ->
+            val copy = element.copy()
+            copy.x += 20f
+            copy.y += 20f
+            copy.zIndex = elements.size + index
+            copy
         }
         updateElementsState(elements + newElements)
+    }
+
+    private fun notifyTransformListener(
+        element: BaseElement,
+        dx: Float? = null,
+        dy: Float? = null,
+        scaleX: Float? = null,
+        scaleY: Float? = null,
+        rotation: Float? = null
+    ) {
+        val listener = element.transformListener ?: return
+        if (dx != null && dy != null) {
+            listener.onMove(dx, dy)
+        }
+        if (scaleX != null && scaleY != null) {
+            listener.onScale(scaleX, scaleY)
+        }
+        if (rotation != null) {
+            listener.onRotate(rotation)
+        }
+        listener.onMatrixChanged(element.getTransformMatrix())
     }
 
     override fun setStrokeWidth(width: Float) {

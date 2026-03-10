@@ -233,16 +233,15 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
                     OperationMode.MOVE -> {
                         baseBounds.offset(dx, dy)
                         sdk.moveSelectedElements(dx, dy)
-                        selectedElements.forEach { it.transformListener?.onMove(dx, dy) }
                     }
                     OperationMode.SCALE_TOP_LEFT, OperationMode.SCALE_TOP_RIGHT,
                     OperationMode.SCALE_BOTTOM_LEFT, OperationMode.SCALE_BOTTOM_RIGHT -> {
-                        handleScale(dx, dy, baseBounds, selectedElements)
+                        handleScale(dx, dy, baseBounds)
                     }
                     OperationMode.ROTATE -> {
                         val currentRot = atan2(y - initialPivotY, x - initialPivotX)
                         val deltaRot = Math.toDegrees((currentRot - initialRotation).toDouble()).toFloat()
-                        handleRotate(deltaRot, initialPivotX, initialPivotY, selectedElements)
+                        handleRotate(deltaRot, initialPivotX, initialPivotY)
                         initialRotation = currentRot
                     }
                     else -> {}
@@ -314,7 +313,7 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
         return dist < handleSize * 1.5f
     }
 
-    private fun handleScale(dx: Float, dy: Float, bounds: RectF, elements: List<BaseElement>) {
+    private fun handleScale(dx: Float, dy: Float, bounds: RectF) {
         val oldWidth = bounds.width()
         val oldHeight = bounds.height()
         if (oldWidth <= 10f || oldHeight <= 10f) return
@@ -374,13 +373,10 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
         val scaleMatrix = Matrix()
         scaleMatrix.postScale(s, s, pivotX, pivotY)
         scaleMatrix.mapRect(baseBounds)
-
-        elements.forEach { it.transformListener?.onScale(s, s) }
     }
 
-    private fun handleRotate(deltaRot: Float, pivotX: Float, pivotY: Float, elements: List<BaseElement>) {
+    private fun handleRotate(deltaRot: Float, pivotX: Float, pivotY: Float) {
         groupRotation += deltaRot
         sdk.rotateSelectedElements(deltaRot, pivotX, pivotY)
-        elements.forEach { it.transformListener?.onRotate(deltaRot) }
     }
 }

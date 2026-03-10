@@ -18,6 +18,7 @@ class MoreToolsPanelView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
+    private var onToolClickListener: ((ToolItem) -> Unit)? = null
 
     init {
         LayoutInflater.from(context).inflate(R.layout.view_more_tools, this, true)
@@ -42,7 +43,10 @@ class MoreToolsPanelView @JvmOverloads constructor(
             val rv = RecyclerView(context).apply {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 layoutManager = LinearLayoutManager(context)
-                adapter = ToolAdapter(column.items)
+                adapter = ToolAdapter(column.items) { item ->
+                    hide()
+                    onToolClickListener?.invoke(item)
+                }
                 overScrollMode = View.OVER_SCROLL_NEVER
                 isNestedScrollingEnabled = false // Disable nested scrolling to allow wrap_content to work correctly in some containers
             }
@@ -60,6 +64,10 @@ class MoreToolsPanelView @JvmOverloads constructor(
         }
     }
 
+    fun setOnToolClickListener(listener: (ToolItem) -> Unit) {
+        onToolClickListener = listener
+    }
+
     fun show() {
         visibility = VISIBLE
     }
@@ -68,7 +76,10 @@ class MoreToolsPanelView @JvmOverloads constructor(
         visibility = GONE
     }
 
-    private class ToolAdapter(private val items: List<ToolItem>) : 
+    private class ToolAdapter(
+        private val items: List<ToolItem>,
+        private val onItemClick: (ToolItem) -> Unit
+    ) :
         RecyclerView.Adapter<ToolAdapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -87,6 +98,7 @@ class MoreToolsPanelView @JvmOverloads constructor(
             holder.tvName.text = item.name
             holder.itemView.setOnClickListener {
                 item.action()
+                onItemClick(item)
             }
         }
 

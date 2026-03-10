@@ -2,6 +2,11 @@
 
 本项目的所有历史对话记录都将记录在此文件中。
 
+## 2026-03-10
+- `/Users/pep/Desktop/github/WhiteBoard4/WhiteBoard4/docs/RequestDoc.md` 实现RDV0.1.1版本需求
+- 继续
+- 修复问题: 单独选中图片旋转过程中, 选中框似乎是以选中框的右下角锚点为中心进行的旋转,而图片是以图片中心进行的旋转. 如果同时选中图片和线条元素时,过程中的现象又是正确的
+
 ## 2026-02-04
 - 实现 `e:\SVN\WhiteBoard4\docs\RequestDoc.md` 中RDV0.0.9版本的需求：
     - **手掌橡皮擦功能**: 在 `PenState` 中集成了 `HikDefaultTouchCalc`，根据 `touchMajor` 自动识别手掌接触。

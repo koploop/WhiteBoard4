@@ -1,6 +1,7 @@
 package display.interactive.whiteboard.element
 
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import java.util.UUID
@@ -24,9 +25,10 @@ abstract class BaseElement(
      * Callback for when the element is being manipulated while selected.
      */
     interface OnSelectedTransformListener {
-        fun onMove(dx: Float, dy: Float)
-        fun onScale(scaleX: Float, scaleY: Float)
-        fun onRotate(rotation: Float)
+        fun onMove(dx: Float, dy: Float) {}
+        fun onScale(scaleX: Float, scaleY: Float) {}
+        fun onRotate(rotation: Float) {}
+        fun onMatrixChanged(matrix: Matrix) {}
     }
 
     var transformListener: OnSelectedTransformListener? = null
@@ -100,5 +102,13 @@ abstract class BaseElement(
 
     protected fun restoreTransform(canvas: Canvas) {
         canvas.restore()
+    }
+
+    open fun getTransformMatrix(): Matrix {
+        val matrix = Matrix()
+        matrix.postScale(scaleX, scaleY)
+        matrix.postRotate(rotation)
+        matrix.postTranslate(x, y)
+        return matrix
     }
 }
