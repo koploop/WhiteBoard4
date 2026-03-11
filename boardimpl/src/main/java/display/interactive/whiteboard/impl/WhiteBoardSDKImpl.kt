@@ -45,11 +45,17 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         sorted.forEach { quadTree.insert(it) }
 
         _uiState.update { state ->
+            val resolvedSelectedIds = selectedIds ?: state.selectedElementIds
+            val activeNoteId = resolveActiveNoteId(resolvedSelectedIds, newElements)
+            val noteMode = if (activeNoteId == null) NoteInteractionMode.NONE else state.noteInteractionMode
             state.copy(
                 elements = newElements,
                 sortedElements = sorted,
-                selectedElementIds = selectedIds ?: state.selectedElementIds,
-                structuralVersion = if (incrementStructural) state.structuralVersion + 1 else state.structuralVersion
+                selectedElementIds = resolvedSelectedIds,
+                structuralVersion = if (incrementStructural) state.structuralVersion + 1 else state.structuralVersion,
+                activeNoteId = activeNoteId,
+                noteInteractionMode = noteMode,
+                uiVersion = state.uiVersion + 1
             )
         }
     }
@@ -71,7 +77,13 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
     }
 
     override fun setInteractionMode(mode: InteractionMode) {
-        _uiState.update { it.copy(interactionMode = mode, eraserPosition = null) }
+        _uiState.update {
+            it.copy(
+                interactionMode = mode,
+                eraserPosition = null,
+                noteInteractionMode = if (mode == InteractionMode.DRAW) it.noteInteractionMode else NoteInteractionMode.NONE
+            )
+        }
     }
 
     override fun updateEraserPosition(position: PointF?) {
@@ -85,9 +97,12 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
             } else {
                 setOf(id)
             }
+            val activeNoteId = resolveActiveNoteId(newSelection, state.elements)
             state.copy(
                 selectedElementIds = newSelection,
-                structuralVersion = state.structuralVersion + 1 // Rebuild cache when selection changes
+                structuralVersion = state.structuralVersion + 1,
+                activeNoteId = activeNoteId,
+                noteInteractionMode = if (activeNoteId == null) NoteInteractionMode.NONE else state.noteInteractionMode
             )
         }
     }
@@ -96,7 +111,9 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
         _uiState.update { state ->
             state.copy(
                 selectedElementIds = emptySet(),
-                structuralVersion = state.structuralVersion + 1 // Rebuild cache when selection changes
+                structuralVersion = state.structuralVersion + 1,
+                activeNoteId = null,
+                noteInteractionMode = NoteInteractionMode.NONE
             )
         }
     }
@@ -162,6 +179,9 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
                     is StrokeElement -> {
                         element.color = color
                     }
+                    is NoteElement -> {
+                        element.backgroundColor = color
+                    }
                 }
             }
         }
@@ -171,6 +191,12 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
     private fun saveToUndo() {
         undoStack.push(_uiState.value.elements)
         redoStack.clear()
+    }
+
+    private fun resolveActiveNoteId(selectedIds: Set<String>, elements: List<BaseElement>): String? {
+        if (selectedIds.size != 1) return null
+        val selectedId = selectedIds.first()
+        return if (elements.any { it.id == selectedId && it is NoteElement }) selectedId else null
     }
 
     override fun setBackgroundType(type: BackgroundType) {
@@ -350,5 +376,60 @@ class WhiteBoardSDKImpl : ViewModel(), IWhiteBoardSDK {
 
     override fun setCanvasTransform(scale: Float, offsetX: Float, offsetY: Float) {
         _uiState.update { it.copy(canvasScale = scale, canvasOffsetX = offsetX, canvasOffsetY = offsetY) }
+    }
+
+    override fun setNoteInteractionMode(mode: NoteInteractionMode) {
+        _uiState.update { state ->
+            if (state.activeNoteId == null) {
+                state.copy(noteInteractionMode = NoteInteractionMode.NONE)
+            } else {
+                state.copy(noteInteractionMode = mode)
+            }
+        }
+    }
+
+    override fun clearNoteInteractionMode() {
+        _uiState.update { it.copy(noteInteractionMode = NoteInteractionMode.NONE) }
+    }
+
+    override fun updateActiveNoteText(text: String) {
+        val state = _uiState.value
+        val noteId = state.activeNoteId ?: return
+        val elements = state.elements
+        val note = elements.find { it.id == noteId } as? NoteElement ?: return
+        note.updateText(text)
+        updateElementsState(elements, incrementStructural = false)
+    }
+
+    override fun beginNoteAnnotation(pointerId: Int, x: Float, y: Float) {
+        val state = _uiState.value
+        val noteId = state.activeNoteId ?: return
+        val note = state.elements.find { it.id == noteId } as? NoteElement ?: return
+        note.beginAnnotation(pointerId, x, y, state.currentStrokeColor, state.currentStrokeWidth)
+        updateElementsState(state.elements, incrementStructural = false)
+    }
+
+    override fun appendNoteAnnotation(pointerId: Int, x: Float, y: Float) {
+        val state = _uiState.value
+        val noteId = state.activeNoteId ?: return
+        val note = state.elements.find { it.id == noteId } as? NoteElement ?: return
+        note.appendAnnotation(pointerId, x, y)
+        updateElementsState(state.elements, incrementStructural = false)
+    }
+
+    override fun endNoteAnnotation(pointerId: Int) {
+        val state = _uiState.value
+        val noteId = state.activeNoteId ?: return
+        val note = state.elements.find { it.id == noteId } as? NoteElement ?: return
+        note.endAnnotation(pointerId)
+        updateElementsState(state.elements)
+    }
+
+    override fun eraseNoteAnnotationAt(x: Float, y: Float, radius: Float) {
+        val state = _uiState.value
+        val noteId = state.activeNoteId ?: return
+        val note = state.elements.find { it.id == noteId } as? NoteElement ?: return
+        note.erase(x, y, radius)
+        updateElementsState(state.elements)
     }
 }

@@ -4,8 +4,15 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Size
+import android.view.Choreographer
 import android.view.View
+import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +27,9 @@ import display.interactive.accelerate.AccelerateCanvas
 import display.interactive.whiteboard.element.BackgroundType
 import display.interactive.whiteboard.element.ImageElement
 import display.interactive.whiteboard.element.InteractionMode
+import display.interactive.whiteboard.element.NoteElement
+import display.interactive.whiteboard.element.NoteInteractionMode
+import display.interactive.whiteboard.impl.NativeViewHostLayer
 import display.interactive.whiteboard.impl.WhiteBoardSDKImpl
 import display.interactive.whiteboard.impl.WhiteBoardSurfaceView
 import display.interactive.whiteboard4.view.MoreToolsPanelView
@@ -35,6 +45,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsPanel: SettingsPanelView
     private lateinit var toolbarView: ToolbarView
     private lateinit var moreToolsPanel: MoreToolsPanelView
+    private lateinit var nativeViewHostLayer: NativeViewHostLayer
+    private var nativeViewFrameSyncEnabled = false
+    private val nativeViewFrameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!nativeViewFrameSyncEnabled) return
+            nativeViewHostLayer.sync(sdk.uiState.value)
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         handleImagePicked(uri)
     }
@@ -50,6 +69,9 @@ class MainActivity : AppCompatActivity() {
         settingsPanel = findViewById(R.id.settingsPanel)
         toolbarView = findViewById(R.id.toolbarView)
         moreToolsPanel = findViewById(R.id.moreToolsPanel)
+        val nativeViewHostContainer = findViewById<FrameLayout>(R.id.nativeViewHostContainer)
+        nativeViewHostLayer = NativeViewHostLayer(this, nativeViewHostContainer)
+        setupNativeViewHostLayer()
 
         // Initialize Accelerate Layer
         val metrics = resources.displayMetrics
@@ -65,6 +87,16 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        startNativeViewFrameSync()
+    }
+
+    override fun onStop() {
+        stopNativeViewFrameSync()
+        super.onStop()
     }
 
     private fun setupUI() {
@@ -153,10 +185,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         moreToolsPanel.setOnToolClickListener { item ->
-            if (item.id == "image") {
-                imagePickerLauncher.launch("image/*")
-            } else {
-                Toast.makeText(this, "该功能暂未实现", Toast.LENGTH_SHORT).show()
+            when (item.id) {
+                "image" -> imagePickerLauncher.launch("image/*")
+                "note" -> {
+                    addNoteElementToBoard()
+                    Toast.makeText(this, "便签已插入", Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    Toast.makeText(this, "该功能暂未实现", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -242,11 +279,128 @@ class MainActivity : AppCompatActivity() {
         sdk.selectElement(imageElement.id)
     }
 
+    private fun addNoteElementToBoard() {
+        val state = sdk.uiState.value
+        val viewWidth = whiteBoardView.width.toFloat().coerceAtLeast(1f)
+        val viewHeight = whiteBoardView.height.toFloat().coerceAtLeast(1f)
+        val worldCenterX = (viewWidth / 2f - state.canvasOffsetX) / state.canvasScale
+        val worldCenterY = (viewHeight / 2f - state.canvasOffsetY) / state.canvasScale
+        val noteWidth = 320f / state.canvasScale
+        val noteHeight = 220f / state.canvasScale
+        val noteElement = NoteElement(
+            id = UUID.randomUUID().toString(),
+            elementWidth = noteWidth,
+            elementHeight = noteHeight,
+            zIndex = state.elements.size
+        )
+        noteElement.x = worldCenterX - noteWidth / 2f
+        noteElement.y = worldCenterY - noteHeight / 2f
+        sdk.addElement(noteElement)
+        sdk.selectElement(noteElement.id)
+        sdk.setInteractionMode(InteractionMode.SELECT)
+    }
+
+    private fun setupNativeViewHostLayer() {
+        nativeViewHostLayer.registerAdapter(object : NativeViewHostLayer.Adapter<NoteElement> {
+            override val elementClass = NoteElement::class
+
+            override fun createView(context: android.content.Context): View {
+                val editText = EditText(context)
+                editText.background = null
+                editText.setTextColor(android.graphics.Color.BLACK)
+                editText.setPadding(24, 24, 24, 24)
+                editText.layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                editText.isFocusable = false
+                editText.isFocusableInTouchMode = false
+                editText.isCursorVisible = false
+                editText.setTextIsSelectable(false)
+                editText.isVerticalScrollBarEnabled = true
+                editText.isSingleLine = false
+                editText.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                editText.setTag(R.id.tag_note_should_push_text, false)
+                editText.setTag(R.id.tag_note_last_editing_state, false)
+                editText.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) {
+                        val shouldPush = editText.getTag(R.id.tag_note_should_push_text) as? Boolean ?: false
+                        if (!shouldPush) return
+                        sdk.updateActiveNoteText(s?.toString().orEmpty())
+                    }
+                })
+                return editText
+            }
+
+            override fun bindView(view: View, element: NoteElement, state: display.interactive.whiteboard.element.WhiteBoardState) {
+                val editText = view as EditText
+                val width = (element.elementWidth * element.scaleX * state.canvasScale).toInt().coerceAtLeast(1)
+                val height = (element.elementHeight * element.scaleY * state.canvasScale).toInt().coerceAtLeast(1)
+                val left = element.x * state.canvasScale + state.canvasOffsetX
+                val top = element.y * state.canvasScale + state.canvasOffsetY
+                val params = editText.layoutParams as FrameLayout.LayoutParams
+                params.width = width
+                params.height = height
+                editText.layoutParams = params
+                editText.x = left
+                editText.y = top
+                editText.rotation = element.rotation
+                editText.pivotX = 0f
+                editText.pivotY = 0f
+                editText.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                editText.setTextColor(element.textColor)
+                val isEditing = state.activeNoteId == element.id && state.noteInteractionMode == NoteInteractionMode.TEXT_EDIT
+                val wasEditing = editText.getTag(R.id.tag_note_last_editing_state) as? Boolean ?: false
+                if (!isEditing && editText.text.toString() != element.text) {
+                    editText.setTag(R.id.tag_note_should_push_text, false)
+                    editText.setText(element.text)
+                    editText.setSelection(editText.text.length)
+                }
+                editText.setTag(R.id.tag_note_should_push_text, isEditing)
+                editText.isFocusable = isEditing
+                editText.isFocusableInTouchMode = isEditing
+                editText.isCursorVisible = isEditing
+                editText.setTextIsSelectable(isEditing)
+                editText.isEnabled = isEditing
+                editText.isClickable = isEditing
+                editText.isLongClickable = isEditing
+                if (isEditing && !wasEditing) {
+                    if (!editText.isFocused) {
+                        editText.requestFocus()
+                    }
+                    val imm = getSystemService(InputMethodManager::class.java)
+                    imm?.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+                } else if (!isEditing && wasEditing) {
+                    if (editText.isFocused) {
+                        editText.clearFocus()
+                    }
+                    val imm = getSystemService(InputMethodManager::class.java)
+                    imm?.hideSoftInputFromWindow(editText.windowToken, 0)
+                }
+                editText.setTag(R.id.tag_note_last_editing_state, isEditing)
+            }
+        })
+    }
+
+    private fun startNativeViewFrameSync() {
+        if (nativeViewFrameSyncEnabled) return
+        nativeViewFrameSyncEnabled = true
+        Choreographer.getInstance().postFrameCallback(nativeViewFrameCallback)
+    }
+
+    private fun stopNativeViewFrameSync() {
+        nativeViewFrameSyncEnabled = false
+        Choreographer.getInstance().removeFrameCallback(nativeViewFrameCallback)
+    }
+
     private fun observeState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sdk.uiState.collect { state ->
                     whiteBoardView.updateState(state)
+                    nativeViewHostLayer.sync(state)
                     toolbarView.setZoomButtonState(state.isZoomMode)
                     toolbarView.setFingerSeparateButtonState(state.isFingerSeparateMode)
                     

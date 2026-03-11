@@ -5,6 +5,7 @@ import android.graphics.RectF
 import display.interactive.whiteboard.element.BackgroundType
 import display.interactive.whiteboard.element.BaseElement
 import display.interactive.whiteboard.element.InteractionMode
+import display.interactive.whiteboard.element.NoteInteractionMode
 import display.interactive.whiteboard.element.StrokeElement
 import display.interactive.whiteboard.element.WhiteBoardState
 import kotlinx.coroutines.flow.StateFlow
@@ -172,4 +173,18 @@ interface IWhiteBoardSDK {
      * Set color of selected elements.
      */
     fun setSelectedElementsColor(color: Int)
+
+    fun setNoteInteractionMode(mode: NoteInteractionMode)
+
+    fun clearNoteInteractionMode()
+
+    fun updateActiveNoteText(text: String)
+
+    fun beginNoteAnnotation(pointerId: Int, x: Float, y: Float)
+
+    fun appendNoteAnnotation(pointerId: Int, x: Float, y: Float)
+
+    fun endNoteAnnotation(pointerId: Int)
+
+    fun eraseNoteAnnotationAt(x: Float, y: Float, radius: Float)
 }

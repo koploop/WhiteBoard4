@@ -22,9 +22,16 @@ data class WhiteBoardState(
     val canvasScale: Float = 1f,
     val canvasOffsetX: Float = 0f,
     val canvasOffsetY: Float = 0f,
-    val eraserPosition: PointF? = null
+    val eraserPosition: PointF? = null,
+    val activeNoteId: String? = null,
+    val noteInteractionMode: NoteInteractionMode = NoteInteractionMode.NONE,
+    val uiVersion: Long = 0L
 )
 
 enum class InteractionMode {
     DRAW, SELECT, NAVIGATE, ERASER
+}
+
+enum class NoteInteractionMode {
+    NONE, TEXT_EDIT, ANNOTATE, ERASE
 }

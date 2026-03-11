@@ -8,6 +8,9 @@ enum class SelectedAbility {
     SCALE,
     ROTATE,
     CHANGE_COLOR,
+    EDIT_TEXT,
+    ANNOTATE,
+    ERASE_ANNOTATION,
     DELETE,
     COPY,
     CHANGE_ORDER

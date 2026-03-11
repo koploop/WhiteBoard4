@@ -3,6 +3,9 @@ package display.interactive.whiteboard.state
 import android.graphics.*
 import android.view.MotionEvent
 import display.interactive.whiteboard.element.BaseElement
+import display.interactive.whiteboard.element.InteractionMode
+import display.interactive.whiteboard.element.NoteElement
+import display.interactive.whiteboard.element.NoteInteractionMode
 import display.interactive.whiteboard.element.SelectedAbility
 import display.interactive.whiteboard.element.StrokeElement
 import display.interactive.whiteboard.interfaces.IWhiteBoardSDK
@@ -159,17 +162,22 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
 
     private fun drawMenu(canvas: Canvas, bounds: RectF, selectedElements: List<BaseElement>) {
         val menuY = bounds.bottom + menuOffset
-        val abilities = mutableSetOf<SelectedAbility>()
-        selectedElements.forEach { element ->
-            if (element.hasSelectedAbility(SelectedAbility.CHANGE_COLOR)) abilities.add(SelectedAbility.CHANGE_COLOR)
-            if (element.hasSelectedAbility(SelectedAbility.DELETE)) abilities.add(SelectedAbility.DELETE)
-            if (element.hasSelectedAbility(SelectedAbility.COPY)) abilities.add(SelectedAbility.COPY)
-            if (element.hasSelectedAbility(SelectedAbility.CHANGE_ORDER)) abilities.add(SelectedAbility.CHANGE_ORDER)
+        val menuCandidates = listOf(
+            SelectedAbility.CHANGE_COLOR,
+            SelectedAbility.EDIT_TEXT,
+            SelectedAbility.ANNOTATE,
+            SelectedAbility.ERASE_ANNOTATION,
+            SelectedAbility.DELETE,
+            SelectedAbility.COPY,
+            SelectedAbility.CHANGE_ORDER
+        )
+        val abilities = menuCandidates.filter { ability ->
+            selectedElements.all { it.hasSelectedAbility(ability) }
         }
 
         if (abilities.isEmpty()) return
 
-        val sortedAbilities = abilities.toList().sortedBy { it.ordinal }
+        val sortedAbilities = abilities.sortedBy { it.ordinal }
         val menuWidth = sortedAbilities.size * menuItemSize
         val menuRect = RectF(bounds.centerX() - menuWidth / 2, menuY, bounds.centerX() + menuWidth / 2, menuY + menuItemSize)
 
@@ -192,6 +200,9 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
             }
             val label = when(ability) {
                 SelectedAbility.CHANGE_COLOR -> "Color"
+                SelectedAbility.EDIT_TEXT -> "Edit"
+                SelectedAbility.ANNOTATE -> "Anno"
+                SelectedAbility.ERASE_ANNOTATION -> "Erase"
                 SelectedAbility.DELETE -> "Del"
                 SelectedAbility.COPY -> "Copy"
                 SelectedAbility.CHANGE_ORDER -> "Layer"
@@ -269,9 +280,26 @@ class SelectedHandler(private val sdk: IWhiteBoardSDK) {
             SelectedAbility.CHANGE_ORDER -> {
                 sdk.bringToFront()
             }
+            SelectedAbility.EDIT_TEXT -> {
+                sdk.setNoteInteractionMode(NoteInteractionMode.TEXT_EDIT)
+                sdk.setInteractionMode(InteractionMode.DRAW)
+            }
+            SelectedAbility.ANNOTATE -> {
+                sdk.setNoteInteractionMode(NoteInteractionMode.ANNOTATE)
+                sdk.setInteractionMode(InteractionMode.DRAW)
+            }
+            SelectedAbility.ERASE_ANNOTATION -> {
+                sdk.setNoteInteractionMode(NoteInteractionMode.ERASE)
+                sdk.setInteractionMode(InteractionMode.DRAW)
+            }
             SelectedAbility.CHANGE_COLOR -> {
                 val colors = intArrayOf(Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, Color.YELLOW)
-                val currentColor = (sdk.uiState.value.elements.find { it.id in sdk.uiState.value.selectedElementIds } as? StrokeElement)?.color ?: Color.BLACK
+                val selectedElement = sdk.uiState.value.elements.find { it.id in sdk.uiState.value.selectedElementIds }
+                val currentColor = when (selectedElement) {
+                    is StrokeElement -> selectedElement.color
+                    is NoteElement -> selectedElement.backgroundColor
+                    else -> Color.BLACK
+                }
                 val nextColor = colors[(colors.indexOf(currentColor) + 1) % colors.size]
                 sdk.setSelectedElementsColor(nextColor)
             }

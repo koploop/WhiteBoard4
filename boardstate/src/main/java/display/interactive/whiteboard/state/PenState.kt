@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import display.interactive.accelerate.AccelerateAddr
 import display.interactive.touch.HikDefaultTouchCalc
 import display.interactive.touch.TouchType
+import display.interactive.whiteboard.element.NoteInteractionMode
 import display.interactive.whiteboard.element.StrokeElement
 import java.util.UUID
 import kotlin.math.hypot
@@ -52,6 +53,9 @@ class PenState : ICanvasState {
 
     override fun handleTouchEvent(event: MotionEvent, pointerId: Int, context: StateContext): Boolean {
         val uiState = context.sdk.uiState.value
+        if (uiState.activeNoteId != null && uiState.noteInteractionMode != NoteInteractionMode.NONE) {
+            return handleNoteInteraction(event, pointerId, context)
+        }
         
         // If not multi-finger enabled, only process events for the first finger (pointerId 0)
         if (!uiState.isMultiFingerEnabled && pointerId != 0) {
@@ -219,6 +223,65 @@ class PenState : ICanvasState {
             }
         }
         return false
+    }
+
+    private fun handleNoteInteraction(event: MotionEvent, pointerId: Int, context: StateContext): Boolean {
+        val state = context.sdk.uiState.value
+        val mode = state.noteInteractionMode
+        val index = event.findPointerIndex(pointerId)
+        if (index == -1) return false
+        val x = context.toWorldX(event.getX(index))
+        val y = context.toWorldY(event.getY(index))
+        return when (mode) {
+            NoteInteractionMode.TEXT_EDIT -> false
+            NoteInteractionMode.ANNOTATE -> {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                        if (event.actionIndex == index) {
+                            context.sdk.beginNoteAnnotation(pointerId, x, y)
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        for (i in 0 until event.pointerCount) {
+                            val pId = event.getPointerId(i)
+                            val pIndex = event.findPointerIndex(pId)
+                            if (pIndex == -1) continue
+                            val pX = context.toWorldX(event.getX(pIndex))
+                            val pY = context.toWorldY(event.getY(pIndex))
+                            context.sdk.appendNoteAnnotation(pId, pX, pY)
+                        }
+                        true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (event.actionMasked == MotionEvent.ACTION_CANCEL || event.actionIndex == index) {
+                            context.sdk.endNoteAnnotation(pointerId)
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    else -> false
+                }
+            }
+            NoteInteractionMode.ERASE -> {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
+                        context.sdk.eraseNoteAnnotationAt(x, y, 20f)
+                        context.sdk.updateEraserPosition(PointF(x, y))
+                        true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                        context.sdk.updateEraserPosition(null)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            NoteInteractionMode.NONE -> false
+        }
     }
 
     override fun draw(canvas: Canvas, context: StateContext) {

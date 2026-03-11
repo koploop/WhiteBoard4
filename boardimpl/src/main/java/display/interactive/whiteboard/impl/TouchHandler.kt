@@ -1,13 +1,11 @@
 package display.interactive.whiteboard.impl
 
 import android.graphics.Canvas
-import android.graphics.PointF
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import android.view.MotionEvent
 import display.interactive.accelerate.AccelerateCanvas
 import display.interactive.whiteboard.element.InteractionMode
+import display.interactive.whiteboard.element.NativeViewElement
+import display.interactive.whiteboard.element.NoteInteractionMode
 import display.interactive.whiteboard.interfaces.IWhiteBoardSDK
 import display.interactive.whiteboard.state.*
 
@@ -16,10 +14,6 @@ import display.interactive.whiteboard.state.*
  * Now refactored to use a parallel state machine for canvas state management.
  */
 class TouchHandler(private val viewModel: WhiteBoardSDKImpl) : StateContext {
-    
-    companion object {
-        private const val TAG = "TouchHandler"
-    }
 
     // Implementation of StateContext
     override val sdk: IWhiteBoardSDK get() = viewModel
@@ -66,6 +60,31 @@ class TouchHandler(private val viewModel: WhiteBoardSDKImpl) : StateContext {
     }
 
     fun handleTouchEvent(event: MotionEvent, scale: Float, offsetX: Float, offsetY: Float): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            val state = viewModel.uiState.value
+            val worldX = (event.x - offsetX) / scale
+            val worldY = (event.y - offsetY) / scale
+            val hitNativeViewElement = state.elements.asReversed().firstOrNull {
+                it is NativeViewElement && it.contains(worldX, worldY)
+            }
+            if (hitNativeViewElement != null) {
+                val isAlreadySingleSelected = state.selectedElementIds.size == 1 && hitNativeViewElement.id in state.selectedElementIds
+                val canContinueSelectionGesture = state.interactionMode == InteractionMode.SELECT &&
+                    isAlreadySingleSelected &&
+                    state.noteInteractionMode == NoteInteractionMode.NONE
+                if (!canContinueSelectionGesture) {
+                    viewModel.selectElement(hitNativeViewElement.id)
+                    viewModel.clearNoteInteractionMode()
+                    viewModel.setInteractionMode(InteractionMode.SELECT)
+                    updateToolState()
+                    return true
+                }
+            }
+            if (state.noteInteractionMode == NoteInteractionMode.TEXT_EDIT) {
+                viewModel.clearNoteInteractionMode()
+                return true
+            }
+        }
         updateToolState()
         return stateMachine.handleTouchEvent(event)
     }

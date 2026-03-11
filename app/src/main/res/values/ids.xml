@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tag_note_should_push_text" type="id" />
+    <item name="tag_note_last_editing_state" type="id" />
+</resources>
