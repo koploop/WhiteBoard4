@@ -52,6 +52,58 @@
 - **交互冲突处理**: 处理多指模式与画布缩放/拖动的互斥逻辑。
 - **Lasso/Region Selection**: 在选择模式下，通过滑动创建圈选框。选中多个元素后显示统一的大选中框，并支持群组同步移动。
 
+## 坐标系与无限画布设计
+
+### 1. 坐标系定义
+- **屏幕坐标系 (Screen Coordinates)**: 
+    - 对应 Android View 的触摸坐标 (`MotionEvent.x/y`)。
+    - 原点 (0,0) 位于 View 左上角。
+    - 单位：像素 (px)。
+- **世界坐标系 (World Coordinates)**:
+    - 对应白板内部的逻辑坐标系，所有元素 (`BaseElement`) 的位置均在此坐标系下存储。
+    - 理论上无限大，原点 (0,0) 为初始画布中心。
+    - 单位：逻辑像素。
+
+### 2. 无限画布实现
+无限画布通过在 `WhiteBoardState` 中维护全局变换参数实现：
+- `canvasScale`: 画布缩放比例 (1.0 = 100%)。
+- `canvasOffsetX / canvasOffsetY`: 画布在 X/Y 轴的偏移量。
+
+#### 渲染流程
+在 `WhiteBoardSurfaceView.drawEverything()` 中，通过 Canvas 变换矩阵将世界坐标映射到屏幕坐标：
+```kotlin
+canvas.save()
+canvas.translate(canvasOffsetX, canvasOffsetY) // 1. 平移
+canvas.scale(canvasScale, canvasScale)         // 2. 缩放
+// 3. 绘制元素 (此时使用世界坐标)
+elements.forEach { it.draw(canvas) }
+canvas.restore()
+```
+
+#### 坐标转换公式
+- **屏幕转世界 (Screen -> World)**:
+  用于处理触摸事件，将手指坐标转换为元素坐标。
+  $WorldX = (ScreenX - OffsetX) / Scale$
+  $WorldY = (ScreenY - OffsetY) / Scale$
+
+- **世界转屏幕 (World -> Screen)**:
+  用于判断元素是否在屏幕可见区域内。
+  $ScreenX = WorldX * Scale + OffsetX$
+  $ScreenY = WorldY * Scale + OffsetY$
+
+### 3. 元素坐标注意事项
+- **StrokeElement (笔迹)**:
+    - `x, y`: 笔迹的起始偏移量（通常为 0,0 或笔迹包围盒左上角）。
+    - `points`: 存储相对于 `(x, y)` 的点序列。
+- **ImageElement (图片)**:
+    - `x, y`: **图片中心点** (Center)。
+    - 绘制逻辑：`canvas.drawBitmap(bitmap, -width/2, -height/2, paint)`。
+    - 旋转逻辑：围绕 `(x, y)` 中心旋转。
+- **矩阵变换 (Matrix)**:
+    - `BaseElement.getTransformMatrix()` 返回的矩阵用于命中检测 (`contains`)。
+    - 变换顺序必须与 Canvas 绘制顺序一致：**Scale -> Rotate -> Translate**。
+    - 命中检测时，需使用矩阵的**逆矩阵 (Inverse Matrix)** 将世界坐标点映射回元素的局部坐标系。
+
 ## 设计变更记录
 
 ### V0.1.2 - 性能架构优化
